@@ -11,6 +11,14 @@ const LOCATION = process.env.VERTEX_LOCATION ?? "us-central1";
 const OUTPUT_DIR = path.join(process.cwd(), "public", "output");
 
 export async function POST(request: NextRequest) {
+  console.log("--- /api/generate route invoked ---");
+  console.log("GOOGLE_PROJECT_ID:", process.env.GOOGLE_PROJECT_ID);
+  console.log(
+    "Has GOOGLE_APPLICATION_CREDENTIALS_JSON:",
+    Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+  );
+  console.log("Has GOOGLE_JSON fallback:", Boolean(process.env.GOOGLE_JSON));
+
   const credentialsSource =
     process.env.GOOGLE_JSON ?? process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
@@ -27,6 +35,9 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const prompt = formData.get("prompt");
   const imageFile = formData.get("image");
+
+  console.log("Prompt provided:", typeof prompt === "string" ? prompt.slice(0, 80) : prompt);
+  console.log("Image provided:", imageFile instanceof File);
 
   if (typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json(
@@ -151,7 +162,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Vertex generateContent failed:", error);
     return NextResponse.json(
-      { error: "请求 Vertex 失败，请确认网络或凭据配置。" },
+      {
+        error: "请求 Vertex 失败，请确认网络或凭据配置。",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
