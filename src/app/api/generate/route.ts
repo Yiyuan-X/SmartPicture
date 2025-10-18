@@ -3,9 +3,10 @@ import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { v4 as uuid } from "uuid";
-import { VertexAI, Image as VertexImage } from "@google-cloud/vertexai";
+import { VertexAI } from "@google-cloud/vertexai";
 
-const MODEL_ID = process.env.VERTEX_MODEL_ID ?? "gemini-2.0-flash-image";
+const MODEL_ID =
+  process.env.VERTEX_MODEL_ID ?? "gemini-2.5-flash-image";
 const LOCATION = process.env.VERTEX_LOCATION ?? "us-central1";
 const OUTPUT_DIR = path.join(process.cwd(), "public", "output");
 
@@ -77,29 +78,66 @@ export async function POST(request: NextRequest) {
       .jpeg({ quality: 85 })
       .toBuffer();
 
-    const imagePart = VertexImage.fromBuffer(compressedBuffer);
+    const requestPayload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt.trim() },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: compressedBuffer.toString("base64"),
+              },
+            },
+          ],
+        },
+      ],
+    };
 
-    const result = await model.generateContent([prompt.trim(), imagePart]);
-    const responseBlob = await result.response?.blob();
+    const result = await model.generateContent(requestPayload);
+    const candidates = result.response?.candidates ?? [];
 
-    if (!responseBlob) {
+    type InlineImage = { data: string; mimeType?: string };
+    const inlineImages: InlineImage[] = [];
+
+    for (const candidate of candidates) {
+      const parts = candidate.content?.parts ?? [];
+      for (const part of parts) {
+        const inlineData = (part as {
+          inlineData?: { data?: string; mimeType?: string };
+        }).inlineData;
+        if (inlineData?.data) {
+          inlineImages.push({
+            data: inlineData.data,
+            mimeType: inlineData.mimeType,
+          });
+        }
+      }
+    }
+
+    if (!inlineImages.length) {
       return NextResponse.json(
         { error: "生成失败，Vertex 未返回图片内容。" },
         { status: 500 }
       );
     }
 
-    const generatedBuffer = Buffer.from(await responseBlob.arrayBuffer());
-
     await mkdir(OUTPUT_DIR, { recursive: true });
-    const fileName = `${uuid()}.png`;
-    const filePath = path.join(OUTPUT_DIR, fileName);
-    await writeFile(filePath, generatedBuffer);
+    const publicUrls: string[] = [];
 
-    const publicUrl = `/output/${fileName}`;
+    for (const inlineImage of inlineImages) {
+      const mimeType = inlineImage.mimeType?.toLowerCase() ?? "image/png";
+      const extension = mimeType.includes("jpeg") || mimeType.includes("jpg") ? "jpg" : "png";
+      const fileName = `${uuid()}.${extension}`;
+      const filePath = path.join(OUTPUT_DIR, fileName);
+      const buffer = Buffer.from(inlineImage.data, "base64");
+      await writeFile(filePath, buffer);
+      publicUrls.push(`/output/${fileName}`);
+    }
 
     return NextResponse.json(
-      { images: [publicUrl] },
+      { images: publicUrls },
       {
         status: 200,
         headers: {

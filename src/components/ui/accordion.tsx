@@ -48,7 +48,12 @@ interface AccordionItemProps {
   children: React.ReactNode
 }
 
-const AccordionItem = ({ children, className, value, ...props }: AccordionItemProps) => {
+type AccordionItemChildProps = {
+  value?: string
+  isOpen?: boolean
+}
+
+const AccordionItem = ({ children, className, value }: AccordionItemProps) => {
   const context = React.useContext(AccordionContext)
   const isOpen = context?.openItems.includes(value) || false
 
@@ -56,7 +61,10 @@ const AccordionItem = ({ children, className, value, ...props }: AccordionItemPr
     <div className={cn("border rounded-lg", className)}>
       {React.Children.map(children, child =>
         React.isValidElement(child)
-          ? React.cloneElement(child as React.ReactElement<any>, { value, isOpen })
+          ? React.cloneElement(child as React.ReactElement<AccordionItemChildProps>, {
+              value,
+              isOpen,
+            })
           : child
       )}
     </div>

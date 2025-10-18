@@ -7,6 +7,11 @@ interface DropdownMenuProps {
   children: React.ReactNode
 }
 
+type DropdownMenuChildProps = {
+  isOpen?: boolean
+  setIsOpen?: (open: boolean) => void
+}
+
 const DropdownMenu = ({ children }: DropdownMenuProps) => {
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -14,7 +19,10 @@ const DropdownMenu = ({ children }: DropdownMenuProps) => {
     <div className="relative">
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
-          ? React.cloneElement(child as React.ReactElement<any>, { isOpen, setIsOpen })
+          ? React.cloneElement(child as React.ReactElement<DropdownMenuChildProps>, {
+              isOpen,
+              setIsOpen,
+            })
           : child
       )}
     </div>
