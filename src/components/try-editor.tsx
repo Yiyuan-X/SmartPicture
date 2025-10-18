@@ -266,7 +266,7 @@ export default function TryEditor() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center space-y-3 py-12 text-gray-600">
               <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-              <p>Generating with Gemini 2.5 Flash Image…</p>
+              <p>Thanks for your patience—SmartPicture is polishing your result…</p>
             </div>
           ) : generatedImages.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
