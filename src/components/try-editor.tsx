@@ -112,7 +112,7 @@ export default function TryEditor() {
             }
             return null;
           })
-          .filter((url): url is string => Boolean(url));
+          .filter((url): url is string => typeof url === "string" && url.length > 0);
 
         if (!imageUrls.length) {
           throw new Error("未获取到生成的图片，请稍后重试。");
