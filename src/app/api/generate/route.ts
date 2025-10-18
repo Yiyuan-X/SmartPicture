@@ -11,13 +11,14 @@ const LOCATION = process.env.VERTEX_LOCATION ?? "us-central1";
 const OUTPUT_DIR = path.join(process.cwd(), "public", "output");
 
 export async function POST(request: NextRequest) {
-  const googleJson = process.env.GOOGLE_JSON;
+  const credentialsSource =
+    process.env.GOOGLE_JSON ?? process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
-  if (!googleJson) {
+  if (!credentialsSource) {
     return NextResponse.json(
       {
         error:
-          "缺少 GOOGLE_JSON 环境变量，请在 .env.local 中配置 Google 服务账号凭据。",
+          "缺少 GOOGLE_APPLICATION_CREDENTIALS_JSON 环境变量，请在 .env.local 中配置 Google 服务账号凭据。",
       },
       { status: 500 }
     );
@@ -44,24 +45,26 @@ export async function POST(request: NextRequest) {
   let credentials: { project_id?: string };
 
   try {
-    credentials = JSON.parse(googleJson);
+    credentials = JSON.parse(credentialsSource);
   } catch (error) {
-    console.error("Failed to parse GOOGLE_JSON:", error);
+    console.error("Failed to parse service account JSON:", error);
     return NextResponse.json(
-      { error: "GOOGLE_JSON 解析失败，请确认 JSON 格式是否正确。" },
+      { error: "服务账号凭据解析失败，请确认 JSON 格式是否正确。" },
       { status: 500 }
     );
   }
 
-  if (!credentials.project_id) {
+  const projectId = credentials.project_id ?? process.env.GOOGLE_PROJECT_ID;
+
+  if (!projectId) {
     return NextResponse.json(
-      { error: "GOOGLE_JSON 中缺少 project_id。" },
+      { error: "请在凭据或 GOOGLE_PROJECT_ID 中提供 project_id。" },
       { status: 500 }
     );
   }
 
   const vertex = new VertexAI({
-    project: credentials.project_id,
+    project: projectId,
     location: LOCATION,
     googleAuthOptions: { credentials },
   });
