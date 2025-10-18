@@ -88,15 +88,37 @@ export default function TryEditor() {
 
         const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data?.error || "生成失败，请稍后重试。");
+        if (!response.ok || !data?.success) {
+          const detailMessage = typeof data?.details === "string" ? ` ${data.details}` : "";
+          throw new Error((data?.error || "生成失败，请稍后重试。") + detailMessage);
         }
 
         if (!Array.isArray(data?.images) || data.images.length === 0) {
           throw new Error("未获取到生成的图片，请调整提示词后重试。");
         }
 
-        setGeneratedImages(data.images);
+        const imageUrls = data.images
+          .map((item: unknown) => {
+            if (typeof item === "string") {
+              return item;
+            }
+            if (
+              item &&
+              typeof item === "object" &&
+              "dataUrl" in item &&
+              typeof (item as { dataUrl?: unknown }).dataUrl === "string"
+            ) {
+              return (item as { dataUrl: string }).dataUrl;
+            }
+            return null;
+          })
+          .filter((url): url is string => Boolean(url));
+
+        if (!imageUrls.length) {
+          throw new Error("未获取到生成的图片，请稍后重试。");
+        }
+
+        setGeneratedImages(imageUrls);
       } catch (error) {
         console.error("Generate failed:", error);
         setGeneratedImages([]);
