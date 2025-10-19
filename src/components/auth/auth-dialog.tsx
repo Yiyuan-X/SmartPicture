@@ -15,6 +15,7 @@ import { getFirebaseAuth } from "@/lib/firebase-client";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
+import { useUserPoints } from "@/hooks/use-user-points";
 
 type AuthMode = "login" | "register";
 
@@ -31,7 +32,9 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
   const [displayName, setDisplayName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<{ email?: string | null; name?: string | null } | null>(null);
+  const { addPoints } = useUserPoints();
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -48,6 +51,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
   const closeDialog = useCallback(() => {
     setIsOpen(false);
     setErrorMessage(null);
+    setSuccessMessage(null);
   }, []);
 
   const openDialog = useCallback(
@@ -93,6 +97,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
           const credential = await loginWithEmail(email.trim(), password);
           const payload = await toAuthSuccessPayload(credential);
           setUserInfo({ email: payload.email, name: payload.displayName });
+          setSuccessMessage("登录成功，欢迎回来！");
         } else {
           const credential = await registerWithEmail(
             email.trim(),
@@ -101,8 +106,12 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
           );
           const payload = await toAuthSuccessPayload(credential);
           setUserInfo({ email: payload.email, name: payload.displayName });
+          addPoints(100);
+          setSuccessMessage("首次注册成功，已获赠 100 积分，祝你创作顺利！");
         }
-        closeDialog();
+        setTimeout(() => {
+          closeDialog();
+        }, 800);
       } catch (error) {
         setErrorMessage(
           error instanceof Error ? error.message : "邮箱登录失败，请稍后再试。"
@@ -111,7 +120,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
         setIsLoading(false);
       }
     },
-    [email, password, displayName, mode, closeDialog]
+    [email, password, displayName, mode, closeDialog, addPoints]
   );
 
   const handleLogout = useCallback(async () => {
@@ -189,6 +198,9 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
 
             {errorMessage ? (
               <p className="text-sm text-red-500">{errorMessage}</p>
+            ) : null}
+            {successMessage ? (
+              <p className="text-sm text-emerald-600">{successMessage}</p>
             ) : null}
 
             <Button type="submit" className="w-full" disabled={isLoading}>

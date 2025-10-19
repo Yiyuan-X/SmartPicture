@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { requireAuth } from "@/lib/api-auth";
 import { getGenerativeModel } from "@/lib/vertex";
+import { getGoogleErrorStatusCode } from "@/lib/google-errors";
 
 const MODEL_ID = process.env.VERTEX_MODEL_ID ?? "imagegeneration@006";
 
@@ -34,47 +35,52 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!(imageFile instanceof File)) {
-    return NextResponse.json(
-      { error: "请先上传一张图片再生成。" },
-      { status: 400 }
-    );
-  }
-
   const model = getGenerativeModel({ model: MODEL_ID });
 
   try {
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const originalBuffer = Buffer.from(arrayBuffer);
+    let inlineImagePart:
+      | {
+          inlineData: {
+            mimeType: string;
+            data: string;
+          };
+        }
+      | null = null;
 
-    let uploadBuffer: Buffer = originalBuffer;
-    let uploadMimeType =
-      typeof imageFile.type === "string" && imageFile.type
-        ? imageFile.type
-        : "image/png";
+    if (imageFile instanceof File) {
+      const arrayBuffer = await imageFile.arrayBuffer();
+      const originalBuffer = Buffer.from(arrayBuffer as ArrayBuffer);
 
-    if (qualityMode !== "high") {
-      // Compress to conserve tokens and speed unless high-quality mode is requested.
-      uploadBuffer = await sharp(originalBuffer)
-        .resize(512, 512, { fit: "inside" })
-        .jpeg({ quality: 85 })
-        .toBuffer();
-      uploadMimeType = "image/jpeg";
+      let uploadBuffer: Buffer = originalBuffer;
+      let uploadMimeType =
+        typeof imageFile.type === "string" && imageFile.type
+          ? imageFile.type
+          : "image/png";
+
+      if (qualityMode !== "high") {
+        // Compress to conserve tokens and speed unless high-quality mode is requested.
+        uploadBuffer = await sharp(originalBuffer)
+          .resize(512, 512, { fit: "inside" })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+        uploadMimeType = "image/jpeg";
+      }
+
+      inlineImagePart = {
+        inlineData: {
+          mimeType: uploadMimeType,
+          data: uploadBuffer.toString("base64"),
+        },
+      };
     }
 
     const requestPayload = {
       contents: [
         {
           role: "user",
-          parts: [
-            { text: prompt.trim() },
-            {
-              inlineData: {
-                mimeType: uploadMimeType,
-                data: uploadBuffer.toString("base64"),
-              },
-            },
-          ],
+          parts: inlineImagePart
+            ? [{ text: prompt.trim() }, inlineImagePart]
+            : [{ text: prompt.trim() }],
         },
       ],
     };
@@ -122,6 +128,19 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Vertex generateContent failed:", error);
+
+    const statusCode = getGoogleErrorStatusCode(error);
+
+    if (statusCode === 429) {
+      return NextResponse.json(
+        {
+          error: "生成请求过于频繁，请稍后重试或在 Google Cloud 控制台提升 Vertex AI 配额。",
+          details: error instanceof Error ? error.message : "",
+        },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: "请求 Vertex 失败，请确认网络或凭据配置。",

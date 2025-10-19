@@ -57,6 +57,26 @@ const modules = [
     features: ["文档上传", "会话式搜索", "安全历史记录"],
     icon: BookOpen,
   },
+  {
+    id: "insight_lab",
+    name: "智能洞察",
+    promise: "每天 5 篇 Insight，AEO 领先布局。",
+    description:
+      "自动生成并排版 SEO + AEO 优化文章，附带跨平台分享素材与积分激励，打造真实可信的品牌内容中枢。",
+    href: "/insights",
+    features: ["每日 5 篇自动生文", "SEO/AEO 模板", "积分传播闭环"],
+    icon: Globe2,
+  },
+  {
+    id: "screenshot_tool",
+    name: "截图与标注",
+    promise: "一体化截图、标注、OCR 与分享。",
+    description:
+      "SmartPix 截图工具支持区域、窗口、滚动截图，并可即时标注、OCR 识别与生成可分享链接，打造 SEO 可见的图片内容。",
+    href: "/screenshot",
+    features: ["多模式截图", "轻量标注", "OCR 识别", "一键分享"],
+    icon: Camera,
+  },
 ];
 
 const aiEndpoints = [

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import TryEditor from "@/components/try-editor";
 import { InspirationGallery } from "@/components/creative-suite/inspiration-gallery";
 import { StylePresets } from "@/components/creative-suite/style-presets";
@@ -16,8 +17,8 @@ export default function CreativeSuitePage() {
   return (
     <div className="space-y-16 bg-gradient-to-b from-yellow-50 via-white to-orange-50 pb-20">
       <section className="relative overflow-hidden border-b border-orange-100 bg-gradient-to-br from-orange-100 via-yellow-50 to-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-20 md:flex-row md:items-center">
-          <div className="space-y-6 md:w-1/2">
+        <div className="mx-auto max-w-6xl space-y-10 px-4 py-16">
+          <div className="space-y-5 lg:space-y-6">
             <Badge className="bg-orange-100 text-orange-700">创意工作室</Badge>
             <h1 className="text-4xl font-bold leading-tight text-gray-900 md:text-5xl">
               将灵感即时可视化
@@ -26,12 +27,14 @@ export default function CreativeSuitePage() {
               上传参考图或产品照片，描述你想讲述的故事。SmartPicture 保留原始构图与角色特征，输出适用于上市发布、营销投放与电商上架的视觉素材。
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <Button className="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-2 text-base shadow-lg hover:from-yellow-600 hover:to-orange-600">
-                <Sparkles className="mr-2 h-4 w-4" />
-                新建生成项目
-              </Button>
-              <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50">
-                查看 2 分钟操作演示
+              <Button
+                asChild
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-2 text-base shadow-lg hover:from-yellow-600 hover:to-orange-600"
+              >
+                <Link href="#try-editor">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  新建生成项目
+                </Link>
               </Button>
             </div>
             <ul className="space-y-3 text-sm text-gray-600">
@@ -43,10 +46,13 @@ export default function CreativeSuitePage() {
               ))}
             </ul>
           </div>
-          <div className="md:w-1/2 space-y-6">
-            <Card className="border-orange-200 bg-white/80 p-6 shadow-lg">
-              <div className="flex items-center gap-3 border-b border-dashed border-orange-100 pb-4">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-200 text-orange-700">
+          <Card
+            id="try-editor"
+            className="border border-orange-100 bg-white/85 shadow-xl scroll-mt-24"
+          >
+            <div className="border-b border-orange-100 px-6 py-6">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-orange-700">
                   <Zap className="h-5 w-5" />
                 </div>
                 <div>
@@ -56,12 +62,20 @@ export default function CreativeSuitePage() {
                   </p>
                 </div>
               </div>
-              <p className="pt-4 text-sm text-gray-600">
+              <p className="mt-4 text-sm leading-relaxed text-gray-600">
                 上传单张产品图或场景图，Vertex AI 集成会在执行创意指令时保持构图、光线与角色身份稳定。
               </p>
-            </Card>
-            <TryEditor />
-          </div>
+              <ul className="mt-4 grid gap-2 text-xs text-gray-500 md:grid-cols-2">
+                <li className="rounded-md bg-orange-50 px-3 py-2">支持提示词 + 图片双输入</li>
+                <li className="rounded-md bg-orange-50 px-3 py-2">极速/高质量两种模式随时切换</li>
+                <li className="rounded-md bg-orange-50 px-3 py-2">输出自动保存到创意任务记录</li>
+                <li className="rounded-md bg-orange-50 px-3 py-2">生成过程全程日志可追溯</li>
+              </ul>
+            </div>
+            <div className="px-6 py-6">
+              <TryEditor />
+            </div>
+          </Card>
         </div>
       </section>
 

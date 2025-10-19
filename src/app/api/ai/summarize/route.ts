@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { getGenerativeModel } from "@/lib/vertex";
+import { getGoogleErrorStatusCode } from "@/lib/google-errors";
 
 type SummarizeRequestBody = {
   transcript?: string;
@@ -98,6 +99,17 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Vertex summarize error:", error);
+    const statusCode = getGoogleErrorStatusCode(error);
+    if (statusCode === 429) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "摘要请求过于频繁，请稍后重试或在 Google Cloud 控制台提升 Vertex AI 配额。",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
       {
         success: false,

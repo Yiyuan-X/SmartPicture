@@ -2,19 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
-import { useState } from "react";
+import { Menu, Wand2 } from "lucide-react";
+import { useState, type ComponentType, type SVGProps } from "react";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon?: ComponentType<SVGProps<SVGSVGElement>>;
+};
+
+const navItems: NavItem[] = [
   { href: "/creative-suite", label: "创意工作室" },
   { href: "/content-assistant", label: "内容助理" },
   { href: "/multimedia-hub", label: "多媒体枢纽" },
   { href: "/knowledge-base", label: "知识库" },
+  { href: "/suggestions", label: "功能建议", icon: Wand2 },
 ];
 
-function NavLink({ href, label, onNavigate }: { href: string; label: string; onNavigate?: () => void }) {
+function NavLink({ href, label, icon: Icon, onNavigate }: NavItem & { onNavigate?: () => void }) {
   const pathname = usePathname();
   const isActive = pathname === href;
 
@@ -22,12 +29,11 @@ function NavLink({ href, label, onNavigate }: { href: string; label: string; onN
     <Link
       href={href}
       onClick={onNavigate}
-      className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-        isActive
-          ? "bg-orange-100 text-orange-700"
-          : "text-gray-700 hover:text-orange-600"
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition ${
+        isActive ? "bg-orange-100 text-orange-700" : "text-gray-700 hover:text-orange-600"
       }`}
     >
+      {Icon ? <Icon className="h-4 w-4" /> : null}
       {label}
     </Link>
   );

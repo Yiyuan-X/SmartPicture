@@ -3,6 +3,7 @@ import "./globals.css";
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
   title: "SmartPicture - AI图片生成, 智能抠图与图像识别工具",
@@ -27,6 +28,7 @@ export default function RootLayout({
         <ClientBody>
           <SiteHeader />
           <main>{children}</main>
+          <SiteFooter />
         </ClientBody>
       </body>
     </html>
