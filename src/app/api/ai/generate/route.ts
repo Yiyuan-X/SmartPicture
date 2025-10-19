@@ -1,39 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
-import { VertexAI } from "@google-cloud/vertexai";
+import { requireAuth } from "@/lib/api-auth";
+import { getGenerativeModel } from "@/lib/vertex";
 
-const MODEL_ID =
-  process.env.VERTEX_MODEL_ID ?? "gemini-2.5-flash-image";
-const LOCATION = process.env.VERTEX_LOCATION ?? "us-central1";
+const MODEL_ID = process.env.VERTEX_MODEL_ID ?? "imagegeneration@006";
 
 export async function POST(request: NextRequest) {
-  console.log("--- /api/generate route invoked ---");
-  console.log("GOOGLE_PROJECT_ID:", process.env.GOOGLE_PROJECT_ID);
-  console.log(
-    "Has GOOGLE_APPLICATION_CREDENTIALS_JSON:",
-    Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
-  );
-  console.log("Has GOOGLE_JSON fallback:", Boolean(process.env.GOOGLE_JSON));
-
-  const credentialsSource =
-    process.env.GOOGLE_JSON ?? process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-
-  if (!credentialsSource) {
+  const authResult = await requireAuth(request);
+  if ("error" in authResult) {
     return NextResponse.json(
-      {
-        error:
-          "缺少 GOOGLE_APPLICATION_CREDENTIALS_JSON 环境变量，请在 .env.local 中配置 Google 服务账号凭据。",
-      },
-      { status: 500 }
+      { success: false, error: authResult.error },
+      { status: authResult.status }
     );
   }
 
   const formData = await request.formData();
   const prompt = formData.get("prompt");
   const imageFile = formData.get("image");
+  const qualityModeRaw = formData.get("qualityMode");
+  const qualityMode =
+    typeof qualityModeRaw === "string" && qualityModeRaw === "high"
+      ? "high"
+      : "standard";
 
   console.log("Prompt provided:", typeof prompt === "string" ? prompt.slice(0, 80) : prompt);
   console.log("Image provided:", imageFile instanceof File);
+  console.log("Quality mode:", qualityMode);
 
   if (typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json(
@@ -49,44 +41,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let credentials: { project_id?: string };
-
-  try {
-    credentials = JSON.parse(credentialsSource);
-  } catch (error) {
-    console.error("Failed to parse service account JSON:", error);
-    return NextResponse.json(
-      { error: "服务账号凭据解析失败，请确认 JSON 格式是否正确。" },
-      { status: 500 }
-    );
-  }
-
-  const projectId = credentials.project_id ?? process.env.GOOGLE_PROJECT_ID;
-
-  if (!projectId) {
-    return NextResponse.json(
-      { error: "请在凭据或 GOOGLE_PROJECT_ID 中提供 project_id。" },
-      { status: 500 }
-    );
-  }
-
-  const vertex = new VertexAI({
-    project: projectId,
-    location: LOCATION,
-    googleAuthOptions: { credentials },
-  });
-
-  const model = vertex.preview.getGenerativeModel({ model: MODEL_ID });
+  const model = getGenerativeModel({ model: MODEL_ID });
 
   try {
     const arrayBuffer = await imageFile.arrayBuffer();
     const originalBuffer = Buffer.from(arrayBuffer);
 
-    // Keep bandwidth small for faster round-trips.
-    const compressedBuffer = await sharp(originalBuffer)
-      .resize(512, 512, { fit: "inside" })
-      .jpeg({ quality: 85 })
-      .toBuffer();
+    let uploadBuffer: Buffer = originalBuffer;
+    let uploadMimeType =
+      typeof imageFile.type === "string" && imageFile.type
+        ? imageFile.type
+        : "image/png";
+
+    if (qualityMode !== "high") {
+      // Compress to conserve tokens and speed unless high-quality mode is requested.
+      uploadBuffer = await sharp(originalBuffer)
+        .resize(512, 512, { fit: "inside" })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+      uploadMimeType = "image/jpeg";
+    }
 
     const requestPayload = {
       contents: [
@@ -96,8 +70,8 @@ export async function POST(request: NextRequest) {
             { text: prompt.trim() },
             {
               inlineData: {
-                mimeType: "image/jpeg",
-                data: compressedBuffer.toString("base64"),
+                mimeType: uploadMimeType,
+                data: uploadBuffer.toString("base64"),
               },
             },
           ],
@@ -138,7 +112,7 @@ export async function POST(request: NextRequest) {
     }));
 
     return NextResponse.json(
-      { success: true, images: imagePayload },
+      { success: true, images: imagePayload, uid: authResult.uid },
       {
         status: 200,
         headers: {
