@@ -1,3 +1,63 @@
+# Cloud Run 微服务架构说明
+
+deployment:
+  platform: "Google Cloud Run"
+  region: "us-central1"
+  repository: "smartpicture-backend"
+  base_image: "python:3.9-slim"
+
+services:
+  creative_studio:
+    description: "图像生成服务，调用 Vertex AI Image Generation 接口"
+    runtime: "Python + Flask"
+    endpoint: "/generate-image"
+    entrypoint: "main.py"
+    env:
+      - GOOGLE_API_KEY
+    route: "/creative-studio"
+    cloud_run_service_name: "creative-studio"
+
+  content_assistant:
+    description: "图像分析服务，调用 Gemini Pro Vision"
+    runtime: "Python + Flask"
+    endpoint: "/analyze-image"
+    entrypoint: "main.py"
+    env:
+      - GOOGLE_API_KEY
+    route: "/content-assistant"
+    cloud_run_service_name: "content-assistant"
+
+  multimedia_hub:
+    description: "音视频处理服务，整合 Speech-to-Text、Gemini Pro、Text-to-Speech"
+    runtime: "Python + Flask"
+    endpoint: "/process-media"
+    entrypoint: "main.py"
+    env:
+      - GOOGLE_API_KEY
+    route: "/multimedia-hub"
+    cloud_run_service_name: "multimedia-hub"
+
+  knowledge_base:
+    description: "知识库 (RAG)，整合向量数据库与 Gemini Pro"
+    runtime: "Python + Flask"
+    endpoint: "/query"
+    entrypoint: "main.py"
+    env:
+      - GOOGLE_API_KEY
+    route: "/knowledge-base"
+    cloud_run_service_name: "knowledge-base"
+
+  smart_insights:
+    description: "文章生成服务，调用 Gemini Pro"
+    runtime: "Python + Flask"
+    endpoint: "/generate-text"
+    entrypoint: "main.py"
+    env:
+      - GOOGLE_API_KEY
+    route: "/smart-insights"
+    cloud_run_service_name: "smart-insights"
+
+
 好的，这是一个结合了Google Cloud Platform (GCP) 产品和服务的 ##SmartPicture Growth Hub 后端开发文档##，旨在最大化利用GCP的优势，同时保留了之前的核心业务逻辑和API设计。
 
 ---

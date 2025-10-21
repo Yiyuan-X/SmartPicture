@@ -2,61 +2,28 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, CloudUpload, Languages, Layout, Link2, Sparkles, Wand2 } from "lucide-react";
+import { JsonLd } from "@/components/seo/json-ld";
+import {
+  screenshotCaptureModes,
+  screenshotGoogleIntegrations,
+  screenshotJsonLd,
+  screenshotShortcuts,
+} from "@/data/screenshot";
+import { createMetadata } from "@/lib/metadata";
+import { CheckCircle2, CloudUpload, Languages, Layout, Sparkles, Wand2 } from "lucide-react";
 
-const captureModes = [
-  "区域 / 窗口 / 全屏 / 滚动截图",
-  "矢量标注（箭头、马赛克、文字）",
-  "自动 OCR 识别（Google Vision API）",
-  "Gemini AI 摘要与关键词抽取",
-  "多语言翻译（Cloud Translation API）",
-  "一键上传至 Google Drive 并生成分享链接",
-];
-
-const googleIntegrations = [
-  {
-    title: "Google Identity",
-    description:
-      "通过 Google OAuth 2.0 验证，授权使用 Drive / Vision / Translation / Gemini 等服务，权限可按需细分。",
-  },
-  {
-    title: "Cloud Vision OCR",
-    description:
-      "对截图进行文字识别，支持多语言检测，返回结构化文本与语言置信度，用于后续摘要与翻译。",
-  },
-  {
-    title: "Gemini AI 摘要",
-    description:
-      "将 OCR 文本提交至 Gemini-Pro 或 Gemini 2.0，生成摘要、关键词与 AEO 结构化提示，提升搜索可见度。",
-  },
-  {
-    title: "Cloud Translation",
-    description:
-      "快速翻译截图中的要点，支持多语种输出，可直接嵌入分享链接或社交媒体描述中。",
-  },
-  {
-    title: "Google Drive & Workspace",
-    description:
-      "上传原图与标注版本至 Drive，生成 anyoneWithLink 访问链接，也可自动嵌入 Google Docs/Slides。",
-  },
-  {
-    title: "Google Analytics 4",
-    description:
-      "通过 GA4 API 记录 capture、OCR、share 等事件，跟踪功能使用情况，优化用户留存。",
-  },
-];
-
-const shortcuts = [
-  { combo: "Ctrl + Alt + S", action: "打开截图工具" },
-  { combo: "Ctrl + Shift + 1", action: "区域截图" },
-  { combo: "Ctrl + Shift + 2", action: "窗口截图" },
-  { combo: "Ctrl + Shift + 3", action: "全屏截图" },
-  { combo: "Ctrl + Shift + 4", action: "滚动截图" },
-];
+export const metadata = createMetadata({
+  title: "截图与标注",
+  description:
+    "SmartPix 截图工具整合 Google Drive、Vision、Gemini 与 Translation，完成截图、标注、OCR、翻译与分享的全链路自动化。",
+  path: "/screenshot",
+});
 
 export default function ScreenshotToolPage() {
   return (
     <div className="space-y-16 bg-gradient-to-b from-slate-50 via-white to-amber-50 pb-20">
+      <JsonLd id="screenshot-json-ld" data={screenshotJsonLd} />
+
       <section className="border-b border-slate-200 bg-white/95">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 lg:grid-cols-[1.05fr,0.95fr]">
           <div className="space-y-6">
@@ -71,7 +38,7 @@ export default function ScreenshotToolPage() {
               SmartPix 截图与标注模块集成 Google Drive、Vision、Gemini 与 Translation API，帮助团队快速截屏、获取文本与摘要、生成多语言内容，并自动存档到 Google Drive。
             </p>
             <ul className="space-y-2 text-sm text-slate-600">
-              {captureModes.map((item) => (
+              {screenshotCaptureModes.map((item) => (
                 <li key={item} className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                   {item}
@@ -99,9 +66,8 @@ export default function ScreenshotToolPage() {
                   AI 增强工作流
                 </h2>
                 <p className="mt-2 text-slate-600">
-                  ① 浏览器使用 <span className="font-semibold text-slate-800">getDisplayMedia</span> 捕获屏幕 →{" "}
-                  ② Canvas 进行标注与图层管理 → ③ 上传到 Google Drive → ④ Vision API OCR → ⑤ Gemini 摘要 →
-                  ⑥ Translation API 生成多语言描述。
+                  ① 浏览器使用 <span className="font-semibold text-slate-800">getDisplayMedia</span> 捕获屏幕 → ② Canvas
+                  进行标注与图层管理 → ③ 上传到 Google Drive → ④ Vision API OCR → ⑤ Gemini 摘要 → ⑥ Translation API 生成多语言描述。
                 </p>
               </div>
               <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/70 p-4 text-emerald-700">
@@ -125,7 +91,7 @@ export default function ScreenshotToolPage() {
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {googleIntegrations.map((item) => (
+          {screenshotGoogleIntegrations.map((item) => (
             <Card key={item.title} className="h-full border-slate-200 bg-white/90 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900">{item.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.description}</p>
@@ -150,7 +116,7 @@ export default function ScreenshotToolPage() {
               工具栏提供截图模式切换、标注工具、撤销/重做、上传与分享按钮。OCR 抽屉展示识别文字、AI 摘要与翻译结果，可一键复制或导出为 Google Docs。
             </p>
             <ul className="space-y-2">
-              {shortcuts.map((shortcut) => (
+              {screenshotShortcuts.map((shortcut) => (
                 <li
                   key={shortcut.combo}
                   className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 text-xs"
@@ -201,8 +167,8 @@ export default function ScreenshotToolPage() {
               </div>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              将 Vision OCR 的文本传入 Gemini，生成摘要（≤ 280 字）与 5 个关键词，再通过 Translation API 输出 EN / JA /
-              TH 等目标语言，自动写入页面描述，提高 SEO 与 AEO 表现。
+              将 Vision OCR 的文本传入 Gemini，生成摘要（≤ 280 字）与 5 个关键词，再通过 Translation API 输出 EN / JA / TH
+              等目标语言，自动写入页面描述，提高 SEO 与 AEO 表现。
             </p>
             <div className="mt-4 grid gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-700">
               <div className="flex items-center gap-2 font-semibold">
@@ -239,9 +205,8 @@ export default function ScreenshotToolPage() {
             <div className="space-y-3">
               <h2 className="text-2xl font-semibold text-slate-900">接入指南</h2>
               <p className="text-sm text-slate-600">
-                在生产环境中，请在 Google Cloud Console 中启用 Drive、Vision、Translation、Vertex AI
-                API，并配置 OAuth 2.0 客户端。服务端 Next.js Route 使用 Application Default Credentials 或 Service Account
-                Impersonation。
+                在生产环境中，请在 Google Cloud Console 中启用 Drive、Vision、Translation、Vertex AI API，并配置 OAuth 2.0 客户端。服务端
+                Next.js Route 使用 Application Default Credentials 或 Service Account Impersonation。
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -257,11 +222,7 @@ export default function ScreenshotToolPage() {
               >
                 <Link href="/generate-article">继续体验 SmartPicture 其他能力</Link>
               </Button>
-              <Button
-                variant="ghost"
-                className="text-slate-500 hover:text-slate-700"
-                asChild
-              >
+              <Button variant="ghost" className="text-slate-500 hover:text-slate-700" asChild>
                 <Link href="/insights">浏览智能洞察</Link>
               </Button>
             </div>

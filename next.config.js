@@ -45,6 +45,12 @@ const nextConfig = {
       },
     ],
   },
+  reactStrictMode: true,
+  i18n: {
+    locales: ['zh-CN', 'en'],
+    defaultLocale: 'zh-CN',
+  },
+  // 可根据地域自适应做 Geo 重定向（边缘中间件可选）
 };
 
 module.exports = nextConfig;

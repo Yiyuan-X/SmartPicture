@@ -1,0 +1,133 @@
+# Cloud Run 微服务架构说明
+
+# codex.deploy.yml
+deployment:
+  platform: google-cloud-run
+  region: us-central1
+  repository: smartpicture-backend
+  base_image: python:3.9-slim
+  project_id: alert-autumn-467806-j3
+  env:
+    - GOOGLE_API_KEY
+  services:
+    creative_studio:
+      description: 图像生成服务（Vertex AI Image Generation）
+      entrypoint: creative_studio/main.py
+      endpoint: /generate-image
+      runtime: python+flask
+      deploy: true
+
+    content_assistant:
+      description: 图像分析服务（Gemini Pro Vision）
+      entrypoint: content_assistant/main.py
+      endpoint: /analyze-image
+      runtime: python+flask
+      deploy: true
+
+    multimedia_hub:
+      description: 音视频处理（Speech-to-Text + Text-to-Speech）
+      entrypoint: multimedia_hub/main.py
+      endpoint: /process-media
+      runtime: python+flask
+      deploy: true
+
+    knowledge_base:
+      description: 检索增强生成（RAG + 向量数据库）
+      entrypoint: knowledge_base/main.py
+      endpoint: /query
+      runtime: python+flask
+      deploy: true
+
+    smart_insights:
+      description: 文章生成服务（Gemini Pro）
+      entrypoint: smart_insights/main.py
+      endpoint: /generate-text
+      runtime: python+flask
+      deploy: true
+
+
+
+deployment:
+  platform: google-cloud-run
+  project_id: alert-autumn-467806-j3
+  region: us-central1
+  repository: smartpicture-backend
+  env:
+    - GOOGLE_API_KEY
+    - DATABASE_URL
+    - FIREBASE_PROJECT_ID
+  ci_cd:
+    builder: cloud-build
+    container_registry: artifact-registry
+    deploy_type: "multi-service"
+  services:
+    creative_studio:
+      description: 图像生成服务 (Vertex AI Image Generation)
+      entrypoint: creative_studio/main.py
+      runtime: python:3.9
+      routes:
+        - path: /generate-image
+          method: POST
+      deploy: true
+
+    content_assistant:
+      description: 图像分析服务 (Gemini Pro Vision)
+      entrypoint: content_assistant/main.py
+      runtime: python:3.9
+      routes:
+        - path: /analyze
+          method: POST
+      deploy: true
+
+    multimedia_hub:
+      description: 音视频处理 (Speech-to-Text + Text-to-Speech)
+      entrypoint: multimedia_hub/main.py
+      runtime: python:3.9
+      routes:
+        - path: /process
+          method: POST
+      deploy: true
+
+    knowledge_base:
+      description: 检索增强生成 (RAG) 服务
+      entrypoint: knowledge_base/main.py
+      runtime: python:3.9
+      routes:
+        - path: /query
+          method: POST
+      deploy: true
+
+    smart_insights:
+      description: 内容生成 (Gemini Pro)
+      entrypoint: smart_insights/main.py
+      runtime: python:3.9
+      routes:
+        - path: /generate-text
+          method: POST
+      deploy: true
+
+
+# 文件名：cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '${_IMAGE_NAME}', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_IMAGE_NAME}']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', '${_SERVICE_NAME}',
+        '--image', '${_IMAGE_NAME}',
+        '--region', 'us-central1',
+        '--allow-unauthenticated',
+        '--set-env-vars', 'GOOGLE_API_KEY=${_GOOGLE_API_KEY}'
+      ]
+images:
+  - '${_IMAGE_NAME}'
+substitutions:
+  _SERVICE_NAME: 'smart-insights'
+  _IMAGE_NAME: 'us-central1-docker.pkg.dev/alert-autumn-467806-j3/smartpicture-backend/smart-insights'
+  _GOOGLE_API_KEY: 'YOUR_API_KEY'

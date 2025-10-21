@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { JsonLd } from "@/components/seo/json-ld";
+import { insightsJsonLd } from "@/data/insights";
+import { createMetadata } from "@/lib/metadata";
 import { listInsightArticles } from "@/lib/insights-store";
 import { CalendarDays, PenSquare, Sparkles, Share2, TrendingUp } from "lucide-react";
 import InsightsReferralCard from "@/components/insights/referral-card";
@@ -24,6 +27,13 @@ function formatDateValue(input: string) {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = createMetadata({
+  title: "智能洞察",
+  description:
+    "SmartPicture Insight Lab 每天自动生成覆盖 SEO 与 AEO 的高质量洞察文章，并提供分享素材与积分激励，助力品牌增长。",
+  path: "/insights",
+});
+
 export default async function InsightsPage() {
   const articles = await listInsightArticles();
   const [featured, ...rest] = articles;
@@ -34,6 +44,7 @@ export default async function InsightsPage() {
 
   return (
     <div className="space-y-16 bg-gradient-to-b from-blue-50 via-white to-amber-50 pb-24">
+      <JsonLd id="insights-json-ld" data={insightsJsonLd} />
       <section className="border-b border-blue-100 bg-white/90">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-5">
@@ -76,7 +87,7 @@ export default async function InsightsPage() {
             <h2 className="text-lg font-semibold text-gray-900">自动生文调度（演示）</h2>
             <ul className="space-y-3 text-sm text-gray-600">
               <li>
-                <strong className="text-gray-900">每日 06:00：</strong> 触发 /api/articles/auto-generate，生成 5 篇行业热词文章并同步到「智能洞察」。
+                <strong className="text-gray-900">每日 06:00：</strong> 触发智能体，生成 5 篇行业热词文章并同步到「智能洞察」。
               </li>
               <li>
                 <strong className="text-gray-900">自动打分：</strong> 根据 AEO 结构与关键词密度生成质量评分，便于内容团队筛选。
@@ -84,13 +95,8 @@ export default async function InsightsPage() {
               <li>
                 <strong className="text-gray-900">再分发：</strong> 系统自动生成 Facebook、LinkedIn、X 和 朋友圈分享文案，复制即用。
               </li>
-              <li>
-                <strong className="text-gray-900">积分激励：</strong> 分享文章或邀请伙伴使用自动生文功能，可解锁积分任务。
-              </li>
             </ul>
-            <p className="rounded-lg border border-dashed border-blue-200 bg-blue-50/70 p-3 text-xs text-blue-600">
-              提醒：在生产环境中，可使用 Vercel/Netlify Scheduler 或 Google Cloud Scheduler 调用上述 API。
-            </p>
+
           </Card>
         </div>
       </section>

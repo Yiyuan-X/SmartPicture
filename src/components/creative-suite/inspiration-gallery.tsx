@@ -26,7 +26,7 @@ const galleryItems = [
     prompt:
       "创作一组时尚人像，采用电影级光影，保持面部特征与服装配色在多张图片中一致。",
     imageUrl:
-      "https://images.unsplash.com/photo-1511288599420-5a4c84eb4c59?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=80",
   },
 ];
 

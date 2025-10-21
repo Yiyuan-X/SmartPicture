@@ -1,14 +1,29 @@
-import type { Metadata } from "next";
 import "./globals.css";
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { JsonLd } from "@/components/seo/json-ld";
+import { baseMetadata, siteConfig } from "@/config/site";
 
-export const metadata: Metadata = {
-  title: "SmartPicture - AI图片生成, 智能抠图与图像识别工具",
-  description:
-    "使用 SmartPicture，一键完成 AI 图片生成、智能抠图、图像识别和批量压缩。专为设计师、营销人员和内容创作者打造的在线 AI 视觉工具。",
+export const metadata = baseMetadata;
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${siteConfig.url}#organization`,
+  name: siteConfig.organization.legalName,
+  url: siteConfig.organization.url,
+  logo: `${siteConfig.url}${siteConfig.organization.logo}`,
+  contactPoint: [
+    {
+      "@type": "ContactPoint",
+      email: siteConfig.contactEmail,
+      contactType: "customer support",
+      availableLanguage: ["zh-CN", "en-US"],
+    },
+  ],
+  sameAs: siteConfig.organization.sameAs,
 };
 
 export default function RootLayout({
@@ -23,6 +38,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           src="//unpkg.com/same-runtime/dist/index.global.js"
         />
+        <JsonLd id="organization-json-ld" data={organizationJsonLd} />
       </head>
       <body suppressHydrationWarning className="antialiased font-sans">
         <ClientBody>

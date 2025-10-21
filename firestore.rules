@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 用户档案（本人可读写；后端可扩展字段）
+    match /users/{uid} {
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 交易流水（仅本人可读；写入仅服务端）
+    match /transactions/{doc} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow write: if false; // 仅 Cloud Functions/Run 服务账号写入
+    }
+
+    // 邀请记录（用户可读；写入仅服务端）
+    match /referrals/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // 砍价活动（公开可读用于分享；写入仅服务端）
+    match /campaigns/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

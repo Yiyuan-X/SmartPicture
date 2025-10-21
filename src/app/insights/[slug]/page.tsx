@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { JsonLd } from "@/components/seo/json-ld";
+import { buildInsightArticleJsonLd } from "@/data/insights";
+import { createMetadata } from "@/lib/metadata";
 import { getInsightBySlug } from "@/lib/insights-store";
 import InsightShareActions from "@/components/insights/share-actions";
 import { ArrowLeft, CalendarDays, Clock, Layers, Sparkles } from "lucide-react";
@@ -31,6 +34,33 @@ function estimateReadingMinutes(html: string) {
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const article = await getInsightBySlug(slug);
+  if (!article) {
+    return createMetadata({
+      title: "文章未找到",
+      description: "指定的洞察文章不存在或已被删除。",
+      path: `/insights/${slug}`,
+      robots: {
+        index: false,
+        follow: false,
+      },
+    });
+  }
+
+  return createMetadata({
+    title: article.title,
+    description: article.summary ?? article.seoDescription ?? article.seoTitle,
+    path: `/insights/${article.slug}`,
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: article.summary ?? article.seoDescription ?? article.seoTitle,
+    },
+  });
+}
+
 export default async function InsightDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = await getInsightBySlug(slug);
@@ -42,7 +72,9 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
   const tocItems = article.outline?.length ? article.outline.slice(0, 12) : [];
 
   return (
-    <div className="bg-gradient-to-b from-white via-blue-50 to-amber-50 pb-24">
+    <>
+      <JsonLd id={`insight-${article.slug}-json-ld`} data={buildInsightArticleJsonLd(article)} />
+      <div className="bg-gradient-to-b from-white via-blue-50 to-amber-50 pb-24">
       <section className="border-b border-blue-100 bg-white/95">
         <div className="mx-auto max-w-5xl space-y-8 px-4 py-16">
           <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500">
@@ -171,6 +203,7 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
           <InsightShareActions articleTitle={article.title} shareSnippets={article.shareSnippets} slug={article.slug} />
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
