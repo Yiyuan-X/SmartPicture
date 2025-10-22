@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { useUserPoints } from "@/hooks/use-user-points";
-import { useRouter } from "next/router";
 import { resolveDashboardRoute } from "@/lib/resolve-dashboard";
 
 type AuthMode = "login" | "register";
@@ -27,7 +26,6 @@ type AuthDialogProps = {
 };
 
 export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -76,7 +74,9 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
       setUserInfo({ email: payload.email, name: payload.displayName });
       try {
         const target = await resolveDashboardRoute(credential.user);
-        router.push(target);
+        if (typeof window !== "undefined") {
+          window.location.assign(target);
+        }
       } catch (error) {
         console.warn("Failed to resolve dashboard route after Google login", error);
       }
@@ -88,7 +88,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
     } finally {
       setIsLoading(false);
     }
-  }, [closeDialog, router]);
+  }, [closeDialog]);
 
   const handleEmailSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -109,7 +109,9 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
           setSuccessMessage("登录成功，欢迎回来！");
           try {
             const target = await resolveDashboardRoute(credential.user);
-            router.push(target);
+            if (typeof window !== "undefined") {
+              window.location.assign(target);
+            }
           } catch (error) {
             console.warn("Failed to resolve dashboard route after email login", error);
           }
@@ -125,7 +127,9 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
           setSuccessMessage("首次注册成功，已获赠 100 积分，祝你创作顺利！");
           try {
             const target = await resolveDashboardRoute(credential.user);
-            router.push(target);
+            if (typeof window !== "undefined") {
+              window.location.assign(target);
+            }
           } catch (error) {
             console.warn("Failed to resolve dashboard route after registration", error);
           }
@@ -141,7 +145,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
         setIsLoading(false);
       }
     },
-    [email, password, displayName, mode, closeDialog, addPoints, router]
+    [email, password, displayName, mode, closeDialog, addPoints]
   );
 
   const handleLogout = useCallback(async () => {
