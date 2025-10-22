@@ -7,10 +7,8 @@ import { auth, db } from "../../lib/firebase";
 import { resolveDashboardRoute } from "../../lib/resolve-dashboard";
 import { PointsCard } from "@/components/PointsCard";
 import { InsightFeed } from "@/components/InsightFeed";
-import { useRouter } from "next/router";
 
 export default function DashboardHome() {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [points, setPoints] = useState(0);
 
@@ -19,13 +17,17 @@ export default function DashboardHome() {
 
     const authUnsubscribe = auth.onIdTokenChanged(async (currentUser) => {
       if (!currentUser) {
-        router.push("/login");
+        if (typeof window !== "undefined") {
+          window.location.replace("/login");
+        }
         return;
       }
 
       const target = await resolveDashboardRoute(currentUser);
       if (target === "/admin") {
-        router.push("/admin");
+        if (typeof window !== "undefined") {
+          window.location.replace("/admin");
+        }
         return;
       }
 
@@ -45,7 +47,7 @@ export default function DashboardHome() {
         profileUnsubscribe();
       }
     };
-  }, [router]);
+  }, []);
 
   return (
     <div className="p-6 space-y-6">

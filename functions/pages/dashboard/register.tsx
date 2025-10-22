@@ -6,20 +6,20 @@ import React, { useState } from "react";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { resolveDashboardRoute } from "../../lib/resolve-dashboard";
-import { useRouter } from "next/router";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleRegister = async (e: any) => {
     e.preventDefault();
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       const target = await resolveDashboardRoute(credential.user);
-      router.push(target);
+      if (typeof window !== "undefined") {
+        window.location.replace(target);
+      }
     } catch (err: any) {
       setError(err.message);
     }
@@ -29,7 +29,9 @@ export default function RegisterPage() {
     const provider = new GoogleAuthProvider();
     const credential = await signInWithPopup(auth, provider);
     const target = await resolveDashboardRoute(credential.user);
-    router.push(target);
+    if (typeof window !== "undefined") {
+      window.location.replace(target);
+    }
   };
 
   return (

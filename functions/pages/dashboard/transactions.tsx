@@ -4,16 +4,17 @@ if (!admin.apps.length) admin.initializeApp();
 import React, { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../../lib/firebase";
-import { useRouter } from "next/router";
 
 export default function TransactionsPage() {
-  const router = useRouter();
   const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     const u = auth.currentUser;
-    if (!u) router.push("/login");
-    else {
+    if (!u) {
+      if (typeof window !== "undefined") {
+        window.location.replace("/login");
+      }
+    } else {
       const ref = collection(db, `users/${u.uid}/transactions`);
       onSnapshot(ref, (snap) =>
         setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
