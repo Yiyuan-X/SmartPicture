@@ -1,0 +1,94 @@
+你现在是一名资深全栈架构师兼AI自动化工程师。  
+请严格按照以下要求，生成一个可直接部署的Next.js项目模板（Starter Repo）。  
+禁止省略、简化、或跳过任意步骤。  
+
+---
+
+🎯 目标：
+构建一套支持「多语言 + 自动翻译 + SEO/AEO优化 + 自动同步」的完整网站系统，  
+混合使用 next-intl（UI翻译） + Gemini 自动翻译（内容层）。  
+
+---
+
+📁 项目结构要求：
+project/
+├─ app/[locale]/blog/[slug]/page.tsx          # 多语言博客页面
+├─ messages/                                  # next-intl 静态界面翻译文件
+├─ locales/[lang]/blog/                       # Gemini 动态生成的多语言内容
+├─ scripts/                                   # 自动翻译脚本目录
+│  ├─ config.mjs
+│  ├─ translate-gemini.mjs
+│  ├─ i18n-auto.mjs
+├─ i18n.config.js                             # 多语言配置
+├─ next.config.mjs                            # Next.js 配置
+├─ middleware.ts                              # 语言中间件
+├─ .github/workflows/gemini-auto.yml          # 自动任务
+├─ content/blog/                              # 中文原始内容（Markdown）
+└─ README.md
+
+---
+
+⚙️ 技术要求：
+1. 前端框架：Next.js 15
+2. 多语言框架：next-intl
+3. 自动翻译引擎：Gemini 1.5 Pro（Google）
+4. 内容格式：Markdown → JSON (含SEO字段)
+5. 自动同步：GitHub Actions 每日定时触发
+6. 自动生成：SEO标题、描述、关键词、HTML片段
+7. 输出语言：简体中文（主语言）、英文、法语、日语
+
+---
+
+📜 详细实现逻辑：
+
+1. **next-intl 层**
+   - 用 messages/ 目录存放 UI 静态文案。
+   - i18n.config.js 设置默认语言为 zh。
+   - middleware.ts 实现语言检测和自动路由匹配。
+
+2. **Gemini 自动内容层**
+   - scripts/config.mjs 定义基本配置。
+   - scripts/translate-gemini.mjs 调用 Gemini API 自动翻译 + SEO优化。
+   - scripts/i18n-auto.mjs 自动扫描 content/blog/ 下的 Markdown，
+     输出 JSON 文件至 locales/[lang]/blog/。
+   - JSON 内容包含：
+     ```json
+     {
+       "title": "",
+       "description": "",
+       "keywords": [],
+       "html": ""
+     }
+     ```
+
+3. **Next.js 页面层**
+   - app/[locale]/blog/[slug]/page.tsx 读取对应语言 JSON，动态渲染。
+   - 如果不存在对应语言文件 → 返回 notFound()。
+
+4. **自动化层**
+   - .github/workflows/gemini-auto.yml：
+     - 每日凌晨3点自动运行。
+     - 运行 node scripts/i18n-auto.mjs。
+     - 自动提交 locales 文件夹更新到主分支。
+
+5. **SEO/AEO 层**
+   - 自动生成 sitemap.ts 和 robots.txt。
+   - sitemap.ts 中每个文章URL包含 hreflang 映射。
+
+6. **README.md**
+   - 简要说明开发、运行、部署、环境变量配置步骤。
+   - 指明 GEMINI_API_KEY 环境变量。
+
+---
+
+💡 特殊要求：
+- 使用 ESM 模块语法。
+- 每个文件内容必须完整可运行。
+- JSON 使用 UTF-8 编码，格式化（2个空格缩进）。
+- 文件路径与结构需与上方完全一致。
+- 所有注释与文案保持中文说明，便于理解。
+- 默认部署目标：Vercel，可无缝切换到 Cloudflare Pages。
+
+---
+
+🧠 环境变量：

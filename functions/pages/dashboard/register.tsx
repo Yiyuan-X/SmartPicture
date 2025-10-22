@@ -5,6 +5,7 @@ if (!admin.apps.length) admin.initializeApp();
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../lib/firebase";
+import { resolveDashboardRoute } from "../../lib/resolve-dashboard";
 import { useRouter } from "next/router";
 
 export default function RegisterPage() {
@@ -16,8 +17,9 @@ export default function RegisterPage() {
   const handleRegister = async (e: any) => {
     e.preventDefault();
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      const target = await resolveDashboardRoute(credential.user);
+      router.push(target);
     } catch (err: any) {
       setError(err.message);
     }
@@ -25,8 +27,9 @@ export default function RegisterPage() {
 
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-    router.push("/dashboard");
+    const credential = await signInWithPopup(auth, provider);
+    const target = await resolveDashboardRoute(credential.user);
+    router.push(target);
   };
 
   return (

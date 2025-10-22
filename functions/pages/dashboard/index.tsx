@@ -2,8 +2,9 @@ import * as admin from "firebase-admin"
 if (!admin.apps.length) admin.initializeApp();
 
 import React, { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
+import { resolveDashboardRoute } from "../../lib/resolve-dashboard";
 import { PointsCard } from "@/components/PointsCard";
 import { InsightFeed } from "@/components/InsightFeed";
 import { useRouter } from "next/router";
@@ -14,16 +15,37 @@ export default function DashboardHome() {
   const [points, setPoints] = useState(0);
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(async (u) => {
-      if (!u) router.push("/login");
-      else {
-        setUser(u);
-        const ref = doc(db, "users", u.uid);
-        onSnapshot(ref, (snap) => setPoints(snap.data()?.points || 0));
+    let profileUnsubscribe: Unsubscribe | undefined;
+
+    const authUnsubscribe = auth.onIdTokenChanged(async (currentUser) => {
+      if (!currentUser) {
+        router.push("/login");
+        return;
       }
+
+      const target = await resolveDashboardRoute(currentUser);
+      if (target === "/admin") {
+        router.push("/admin");
+        return;
+      }
+
+      setUser(currentUser);
+
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+
+      const ref = doc(db, "users", currentUser.uid);
+      profileUnsubscribe = onSnapshot(ref, (snap) => setPoints(snap.data()?.points || 0));
     });
-    return () => unsub();
-  }, []);
+
+    return () => {
+      authUnsubscribe();
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+    };
+  }, [router]);
 
   return (
     <div className="p-6 space-y-6">

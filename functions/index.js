@@ -1,4 +1,3 @@
-import { onUserCreated } from "firebase-functions/v2/identity"
 import { onSchedule } from "firebase-functions/v2/scheduler"
 import { onRequest } from "firebase-functions/v2/https"
 /**
@@ -32,15 +31,6 @@ async function requireAuth(req) {
   const decoded = await auth.verifyIdToken(token);
   return decoded.uid;
 }
-
-// === 1️⃣ 注册奖励 ===
-export const onAuthCreate = onUserCreated(async (user) => {
-  await db.collection("users").doc(user.uid).set({
-    points: 100,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    level: "bronze",
-  }, { merge: true });
-});
 
 // === 2️⃣ 邀请奖励 ===
 export const referral = onRequest(async (req, res) => {

@@ -1,12 +1,7 @@
-import * as admin from "firebase-admin"
-if (!admin.apps.length) admin.initializeApp();
+import { onRequest } from "firebase-functions/v2/https";
+import { JobServiceClient, protos } from "@google-cloud/bigquery";
 
-import { onRequest } from "firebase-functions/v2/https"
-// functions/analytics/bigqueryStats.ts
-
-import { BigQuery } from "@google-cloud/bigquery";
-
-const bq = new BigQuery();
+const jobServiceClient = new JobServiceClient();
 
 export const bigqueryStats = onRequest(async (req, res) => {
   const query = `
@@ -21,6 +16,82 @@ export const bigqueryStats = onRequest(async (req, res) => {
     ORDER BY date ASC
   `;
 
-  const [rows] = await bq.query({ query });
-  res.json(rows);
+  const projectId =
+    process.env.GCLOUD_PROJECT ??
+    process.env.GOOGLE_CLOUD_PROJECT ??
+    process.env.GCP_PROJECT ??
+    process.env.PROJECT_ID;
+
+  if (!projectId) {
+    res.status(500).json({ error: "Missing Google Cloud project id" });
+    return;
+  }
+
+  try {
+    const [queryResponse] = await jobServiceClient.query({
+      projectId,
+      queryRequest: {
+        query,
+        useLegacySql: {
+          value: false,
+        },
+      },
+    });
+
+    const structRows = queryResponse.rows ?? [];
+    const rows = structRows.map((struct) => structToPlainObject(struct));
+
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to run BigQuery stats query",
+    });
+  }
 });
+
+function structToPlainObject(struct: protos.google.protobuf.IStruct) {
+  const result: Record<string, unknown> = {};
+  const fields = struct.fields ?? {};
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (!value) {
+      result[key] = null;
+      continue;
+    }
+
+    if (value.stringValue !== undefined) {
+      result[key] = value.stringValue;
+      continue;
+    }
+
+    if (value.numberValue !== undefined) {
+      result[key] = value.numberValue;
+      continue;
+    }
+
+    if (value.boolValue !== undefined) {
+      result[key] = value.boolValue;
+      continue;
+    }
+
+    if (value.nullValue !== undefined) {
+      result[key] = null;
+      continue;
+    }
+
+    if (value.structValue) {
+      result[key] = structToPlainObject(value.structValue);
+      continue;
+    }
+
+    if (value.listValue) {
+      const list = value.listValue.values ?? [];
+      result[key] = list.map((item) => structToPlainObject({ fields: { value: item } }).value);
+      continue;
+    }
+
+    result[key] = value;
+  }
+
+  return result;
+}

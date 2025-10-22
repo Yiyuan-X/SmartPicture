@@ -3,7 +3,6 @@
  * Author: Yiyuan (AI Growth Tools Matrix)
  */
 
-import { auth as functionsAuth } from "firebase-functions/v1";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
@@ -42,19 +41,6 @@ async function requireAdmin(uid: string) {
     throw new Error("PERMISSION_DENIED");
   }
 }
-
-// === 1️⃣ 注册奖励 ===
-export const onAuthCreate = functionsAuth.user().onCreate(async (user) => {
-  await db.collection("users").doc(user.uid).set(
-    {
-      points: 100,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      level: "bronze",
-      role: "user",
-    },
-    { merge: true }
-  );
-});
 
 // === 2️⃣ 邀请奖励 ===
 export const referral = onRequest(async (req, res) => {
