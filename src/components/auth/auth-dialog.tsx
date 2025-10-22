@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { useUserPoints } from "@/hooks/use-user-points";
 import { resolveDashboardRoute } from "@/lib/resolve-dashboard";
+import { FirebaseError } from "firebase/app";
 
 type AuthMode = "login" | "register" | "reset";
 
@@ -34,7 +35,6 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,16 +147,24 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
             console.warn("Failed to resolve dashboard route after email login", error);
           }
         } else {
+          const methods = await getAvailableSignInMethods(email.trim());
+          if (methods.includes("password")) {
+            setErrorMessage("该邮箱已注册，请直接登录或通过“忘记密码”重置密码。");
+            setIsLoading(false);
+            return;
+          }
+          if (methods.includes("google.com")) {
+            setErrorMessage("该邮箱已绑定 Google 登录，请点击上方按钮使用 Google 继续。");
+            setIsLoading(false);
+            return;
+          }
+
           if (!hasAcceptedPolicies) {
             setErrorMessage("请先阅读并同意使用条款与隐私政策。");
             return;
           }
 
-          const credential = await registerWithEmail(
-            email.trim(),
-            password,
-            displayName.trim() || undefined
-          );
+          const credential = await registerWithEmail(email.trim(), password);
           const payload = await toAuthSuccessPayload(credential);
           setUserInfo({ email: payload.email, name: payload.displayName });
           addPoints(100);
@@ -174,14 +182,24 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
           closeDialog();
         }, 800);
       } catch (error) {
-        setErrorMessage(
-          error instanceof Error ? error.message : "邮箱登录失败，请稍后再试。"
-        );
+        if (error instanceof FirebaseError) {
+          if (error.code === "auth/email-already-in-use") {
+            setErrorMessage("该邮箱已注册，请直接登录或使用“忘记密码”找回密码。");
+          } else if (error.code === "auth/invalid-login-credentials") {
+            setErrorMessage("邮箱或密码有误，请重新输入或重置密码。");
+          } else {
+            setErrorMessage(error.message);
+          }
+        } else {
+          setErrorMessage(
+            error instanceof Error ? error.message : "邮箱登录失败，请稍后再试。"
+          );
+        }
       } finally {
         setIsLoading(false);
       }
     },
-    [email, password, displayName, mode, closeDialog, addPoints, hasAcceptedPolicies]
+    [email, password, mode, closeDialog, addPoints, hasAcceptedPolicies]
   );
 
   const handleLogout = useCallback(async () => {
@@ -290,15 +308,6 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleEmailSubmit}>
-              {mode === "register" ? (
-                <Input
-                  autoComplete="name"
-                  placeholder="昵称 / 显示名称"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.currentTarget.value)}
-                />
-              ) : null}
-
               <Input
                 type="email"
                 autoComplete="email"
