@@ -141,7 +141,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
         setIsLoading(false);
       }
     },
-    [email, password, displayName, mode, closeDialog, addPoints]
+    [email, password, displayName, mode, closeDialog, addPoints, router]
   );
 
   const handleLogout = useCallback(async () => {

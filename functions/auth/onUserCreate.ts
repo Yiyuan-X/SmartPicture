@@ -15,5 +15,6 @@ export const onUserCreate = auth.user().onCreate(async (user) => {
     createdAt: new Date(),
     points: 0,
     level: "starter",
+    role: "user",
   });
 });
