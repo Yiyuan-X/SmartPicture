@@ -11,7 +11,7 @@ import {
   toAuthSuccessPayload,
   logout,
 } from "@/lib/auth-client";
-import { getFirebaseAuth } from "@/lib/firebase-client";
+import { getFirebaseAuth } from "../../lib/firebase-client";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";

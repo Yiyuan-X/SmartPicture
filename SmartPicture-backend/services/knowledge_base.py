@@ -1,6 +1,5 @@
 from flask import jsonify
 from utils import seo
-from utils.ai_client import generate_content
 
 
 

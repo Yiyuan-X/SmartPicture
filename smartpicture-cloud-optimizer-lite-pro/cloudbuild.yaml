@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'buildx','build','.',
+        '-t','$_REGION-docker.pkg.dev/$PROJECT_ID/smartpicture-backend/core:lite-pro',
+        '--platform','linux/amd64',
+        '--build-arg','NODE_ENV=production',
+        '--push'
+      ]
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/smartpicture-backend/core:lite-pro'
+substitutions:
+  _REGION: 'us-central1'

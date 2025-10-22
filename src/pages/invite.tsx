@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Head from "next/head";
-import { referral } from "../utils/api";
+import { referral } from "@/app/utils/api";
 
 export default function Invite() {
   const [inviteeId, setInviteeId] = useState("");
@@ -10,8 +10,9 @@ export default function Invite() {
     try {
       const r = await referral(inviteeId);
       setMsg(`邀请成功：邀请者 +${r.inviterReward}，新用户 +${r.inviteeReward}`);
-    } catch (e:any) {
-      setMsg(`失败：${e.message || "ERROR"}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "未知错误";
+      setMsg(`失败：${message || "ERROR"}`);
     }
   };
 

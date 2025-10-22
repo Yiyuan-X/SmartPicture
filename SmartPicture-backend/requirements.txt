@@ -1,19 +1,12 @@
-# === SmartPicture Backend Requirements ===
-# 基础 Web 框架
+# === SmartPicture Backend (Lite) ===
 Flask>=3.0.0
-
-# === Google AI 核心依赖 ===
-google-generativeai>=0.5.0
-google-cloud-aiplatform>=1.49.0
-
-# === Firebase / Firestore 支持 ===
 google-cloud-firestore>=2.17.0
 firebase-admin>=6.5.0
 
-# === 生产部署 ===
-gunicorn
+# === AI 生成（按需开启）===
+# google-generativeai>=0.5.0
 
-# === 可选扩展功能（按需安装） ===
+# === 可选扩展功能（默认不安装）===
 # google-cloud-vision         # 图像内容分析
 # google-cloud-speech         # 语音转文本
 # google-cloud-texttospeech   # 文本转语音
@@ -21,5 +14,5 @@ gunicorn
 # google-cloud-pubsub         # 异步任务队列
 # google-cloud-bigquery       # 数据分析
 # google-cloud-translate      # 多语言翻译
-# Pillow                      # 图像处理（SmartPicture常用）
+# Pillow                      # 图像处理
 # requests                    # 外部 API 调用

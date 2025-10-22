@@ -1,3 +1,7 @@
+ignoredBuiltDependencies:
+  - '@firebase/util'
+  - protobufjs
+
 onlyBuiltDependencies:
   - '@biomejs/biome'
   - sharp

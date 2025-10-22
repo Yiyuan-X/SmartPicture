@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Head from "next/head";
-import { generateImage, generateText } from "../utils/api";
+import { generateImage, generateText } from "@/app/utils/api";
 
 export default function Generate() {
   const [prompt, setPrompt] = useState("");

@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 from google.cloud import firestore
 from utils.fb_auth import verify_token
-# 你的 AI 客户端
-from utils.ai_client import generate_content
+
 
 db = firestore.Client()
 app = Flask(__name__)

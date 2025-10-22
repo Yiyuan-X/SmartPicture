@@ -1,8 +1,6 @@
 from flask import Blueprint, request, jsonify
 from utils.seo import build_seo_response
 import os
-from utils.ai_client import generate_content
-
 
 
 # ✅ 定义 Flask Blueprint（推荐在 Cloud Run / Flask App 注册）

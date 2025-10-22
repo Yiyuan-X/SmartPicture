@@ -1,9 +1,8 @@
 from utils import seo
-from utils.ai_client import generate_content
 from flask import Blueprint, request, jsonify
 from utils.auth import verify_token
 from utils.points import get_points, deduct_points
-from utils.ai_client import generate_content
+
 
 creative_studio_bp = Blueprint("creative_studio", __name__)
 

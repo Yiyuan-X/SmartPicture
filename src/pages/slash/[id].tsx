@@ -1,13 +1,22 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function SlashPage() {
   const router = useRouter();
   const { id } = router.query; // slashId
-  const [result, setResult] = useState<any>(null);
+  type SlashSuccessResponse = {
+    message: string;
+    currentPrice: number;
+    cutAmount: number;
+    helperPoints: number;
+  };
+  type SlashErrorResponse = { error: string };
+  type SlashResponse = SlashSuccessResponse | SlashErrorResponse;
+
+  const [result, setResult] = useState<SlashResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSlash() {
+  const handleSlash = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(
@@ -22,7 +31,7 @@ export default function SlashPage() {
         }
       );
 
-      const data = await res.json();
+      const data = (await res.json()) as SlashResponse;
       setResult(data);
     } catch (err) {
       console.error("砍价失败:", err);
@@ -30,13 +39,13 @@ export default function SlashPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       handleSlash();
     }
-  }, [id]);
+  }, [id, handleSlash]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 to-blue-100 p-6">
@@ -46,7 +55,7 @@ export default function SlashPage() {
 
       {result && !loading && (
         <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
-          {result.error ? (
+          {"error" in result ? (
             <p className="text-red-600">{result.error}</p>
           ) : (
             <>

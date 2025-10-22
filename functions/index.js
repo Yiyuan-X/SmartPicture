@@ -1,3 +1,6 @@
+import { onUserCreated } from "firebase-functions/v2/identity"
+import { onSchedule } from "firebase-functions/v2/scheduler"
+import { onRequest } from "firebase-functions/v2/https"
 /**
  * SmartPicture Growth Engine (裂变 + 砍价 + 积分激励)
  * Author: Yiyuan (AI Growth Tools Matrix)
@@ -31,7 +34,7 @@ async function requireAuth(req) {
 }
 
 // === 1️⃣ 注册奖励 ===
-export const onAuthCreate = functions.auth.user().onCreate(async (user) => {
+export const onAuthCreate = onUserCreated(async (user) => {
   await db.collection("users").doc(user.uid).set({
     points: 100,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -40,7 +43,7 @@ export const onAuthCreate = functions.auth.user().onCreate(async (user) => {
 });
 
 // === 2️⃣ 邀请奖励 ===
-export const referral = functions.https.onRequest(async (req, res) => {
+export const referral = onRequest(async (req, res) => {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
     const inviterId = await requireAuth(req);
@@ -78,7 +81,7 @@ export const referral = functions.https.onRequest(async (req, res) => {
 });
 
 // === 3️⃣ 发起砍价 ===
-export const slashStart = functions.https.onRequest(async (req, res) => {
+export const slashStart = onRequest(async (req, res) => {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
     const uid = await requireAuth(req);
@@ -108,7 +111,7 @@ export const slashStart = functions.https.onRequest(async (req, res) => {
 });
 
 // === 4️⃣ 帮砍一刀（动态规则） ===
-export const slashHelp = functions.https.onRequest(async (req, res) => {
+export const slashHelp = onRequest(async (req, res) => {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
     const helperId = await requireAuth(req);
@@ -167,7 +170,7 @@ export const slashHelp = functions.https.onRequest(async (req, res) => {
 });
 
 // === 5️⃣ 每日签到 ===
-export const dailyBonus = functions.scheduler.onSchedule("every 24 hours", async () => {
+export const dailyBonus = onSchedule("every 24 hours", async () => {
   const users = await db.collection("users").get();
   const batch = db.batch();
   users.forEach((doc) => {
@@ -179,7 +182,7 @@ export const dailyBonus = functions.scheduler.onSchedule("every 24 hours", async
 });
 
 // === 6️⃣ （预留）AI 推荐触发 ===
-export const aiRecommend = functions.https.onRequest(async (req, res) => {
+export const aiRecommend = onRequest(async (req, res) => {
   try {
     const { userId } = req.body;
     const vertexEndpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${process.env.GCLOUD_PROJECT}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent`;

@@ -1,0 +1,5 @@
+functions/auth/onUserCreate.ts(1,10): error TS2305: Module '"firebase-functions/identity"' has no exported member 'onUserCreated'.
+functions/auth/onUserCreate.ts(11,38): error TS2339: Property 'onUserCreated' does not exist on type 'typeof import("/Users/yiyuan/Documents/SmartPicture/node_modules/.pnpm/firebase-functions@6.6.0_firebase-admin@13.5.0/node_modules/firebase-functions/lib/v2/providers/identity")'.
+functions/components/InsightFeed.tsx(1,10): error TS2305: Module '"firebase-functions/identity"' has no exported member 'onUserCreated'.
+functions/components/InsightFeed.tsx(48,38): error TS2339: Property 'onUserCreated' does not exist on type 'typeof import("/Users/yiyuan/Documents/SmartPicture/node_modules/.pnpm/firebase-functions@6.6.0_firebase-admin@13.5.0/node_modules/firebase-functions/lib/v2/providers/identity")'.
+functions/insights/dailyInsights.ts(15,30): error TS2552: Cannot find name 'functions'. Did you mean 'Function'?
