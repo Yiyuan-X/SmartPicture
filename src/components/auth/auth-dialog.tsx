@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  consumePendingRedirect,
+  getAvailableSignInMethods,
   loginWithEmail,
   registerWithEmail,
   signInWithGoogle,
+  sendResetEmail,
   toAuthSuccessPayload,
   logout,
 } from "@/lib/auth-client";
@@ -18,7 +22,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useUserPoints } from "@/hooks/use-user-points";
 import { resolveDashboardRoute } from "@/lib/resolve-dashboard";
 
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "reset";
 
 type AuthDialogProps = {
   layout?: "horizontal" | "vertical";
@@ -31,6 +35,8 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -49,6 +55,10 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    void consumePendingRedirect();
+  }, []);
+
   const closeDialog = useCallback(() => {
     setIsOpen(false);
     setErrorMessage(null);
@@ -60,10 +70,21 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
       setMode(nextMode);
       setIsOpen(true);
       setErrorMessage(null);
+      setSuccessMessage(null);
+      setHasAcceptedPolicies(false);
+      setMarketingOptIn(false);
       onAction?.();
     },
     [onAction]
   );
+
+  const switchMode = useCallback((nextMode: AuthMode) => {
+    setMode(nextMode);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setHasAcceptedPolicies(false);
+    setMarketingOptIn(false);
+  }, []);
 
   const handleGoogleAuth = useCallback(async () => {
     try {
@@ -103,6 +124,16 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
         setErrorMessage(null);
 
         if (mode === "login") {
+          const methods = await getAvailableSignInMethods(email.trim());
+          if (
+            methods.includes("google.com") &&
+            !methods.includes("password")
+          ) {
+            setErrorMessage("该邮箱曾使用 Google 登录，请点击上方按钮使用 Google 继续。");
+            setIsLoading(false);
+            return;
+          }
+
           const credential = await loginWithEmail(email.trim(), password);
           const payload = await toAuthSuccessPayload(credential);
           setUserInfo({ email: payload.email, name: payload.displayName });
@@ -116,6 +147,11 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
             console.warn("Failed to resolve dashboard route after email login", error);
           }
         } else {
+          if (!hasAcceptedPolicies) {
+            setErrorMessage("请先阅读并同意使用条款与隐私政策。");
+            return;
+          }
+
           const credential = await registerWithEmail(
             email.trim(),
             password,
@@ -145,7 +181,7 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
         setIsLoading(false);
       }
     },
-    [email, password, displayName, mode, closeDialog, addPoints]
+    [email, password, displayName, mode, closeDialog, addPoints, hasAcceptedPolicies]
   );
 
   const handleLogout = useCallback(async () => {
@@ -156,6 +192,37 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
       setErrorMessage(error instanceof Error ? error.message : "退出登录失败。");
     }
   }, []);
+
+  const handleResetSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!email) {
+        setErrorMessage("请填写需要找回的邮箱。");
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setErrorMessage(null);
+        const methods = await getAvailableSignInMethods(email.trim());
+        if (methods.length === 0) {
+          setErrorMessage("该邮箱尚未注册 SmartPicture 账户。");
+          return;
+        }
+        if (!methods.includes("password")) {
+          setErrorMessage("该账号未设置密码，请使用 Google 登录或联系管理员。");
+          return;
+        }
+        await sendResetEmail(email.trim());
+        setSuccessMessage("重置邮件已发送，请检查邮箱中的操作提示。");
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "密码重置失败，请稍后再试。");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [email]
+  );
 
   const dialogContent = !isOpen ? null : (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4">
@@ -175,85 +242,166 @@ export function AuthDialog({ layout = "horizontal", onAction }: AuthDialogProps)
         </div>
 
         <div className="space-y-5 px-6 py-6">
-          <Button
-            onClick={handleGoogleAuth}
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                正在连接 Google…
-              </>
-            ) : (
-              "使用 Google 账号继续"
-            )}
-          </Button>
-
-          <div className="relative text-center text-xs uppercase text-gray-400">
-            <span className="absolute left-0 right-0 top-1/2 -z-10 h-px bg-gray-200" />
-            <span className="bg-white px-2">或使用邮箱</span>
-          </div>
-
-          <form className="space-y-4" onSubmit={handleEmailSubmit}>
-            {mode === "register" ? (
-              <Input
-                autoComplete="name"
-                placeholder="昵称 / 显示名称"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.currentTarget.value)}
-              />
-            ) : null}
-
-            <Input
-              type="email"
-              autoComplete="email"
-              placeholder="邮箱"
-              value={email}
-              onChange={(event) => setEmail(event.currentTarget.value)}
-            />
-
-            <Input
-              type="password"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              placeholder={mode === "login" ? "密码" : "设置密码（至少 6 位）"}
-              value={password}
-              onChange={(event) => setPassword(event.currentTarget.value)}
-            />
-
-            {errorMessage ? (
-              <p className="text-sm text-red-500">{errorMessage}</p>
-            ) : null}
-            {successMessage ? (
-              <p className="text-sm text-emerald-600">{successMessage}</p>
-            ) : null}
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
+          {mode !== "reset" ? (
+            <Button
+              onClick={handleGoogleAuth}
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  提交中…
+                  正在连接 Google…
                 </>
-              ) : mode === "login" ? (
-                "登录"
               ) : (
-                "注册并体验"
+                "使用 Google 账号继续"
               )}
             </Button>
-          </form>
+          ) : null}
 
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <span>
-              {mode === "login" ? "还没有账号？" : "已经注册过？"}
-            </span>
-            <button
-              type="button"
-              className="text-orange-600 hover:underline"
-              onClick={() => setMode(mode === "login" ? "register" : "login")}
-            >
-              {mode === "login" ? "立即注册" : "直接登录"}
-            </button>
-          </div>
+          {mode !== "reset" ? (
+            <div className="relative text-center text-xs uppercase text-gray-400">
+              <span className="absolute left-0 right-0 top-1/2 -z-10 h-px bg-gray-200" />
+              <span className="bg-white px-2">或使用邮箱</span>
+            </div>
+          ) : null}
+
+          {mode === "reset" ? (
+            <form className="space-y-4" onSubmit={handleResetSubmit}>
+              <Input
+                type="email"
+                autoComplete="email"
+                placeholder="请输入注册邮箱"
+                value={email}
+                onChange={(event) => setEmail(event.currentTarget.value)}
+              />
+              {errorMessage ? <p className="text-sm text-red-500">{errorMessage}</p> : null}
+              {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    发送重置邮件…
+                  </>
+                ) : (
+                  "发送密码重置邮件"
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={handleEmailSubmit}>
+              {mode === "register" ? (
+                <Input
+                  autoComplete="name"
+                  placeholder="昵称 / 显示名称"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.currentTarget.value)}
+                />
+              ) : null}
+
+              <Input
+                type="email"
+                autoComplete="email"
+                placeholder="邮箱"
+                value={email}
+                onChange={(event) => setEmail(event.currentTarget.value)}
+              />
+
+              <Input
+                type="password"
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                placeholder={mode === "login" ? "密码" : "设置密码（至少 6 位）"}
+                value={password}
+                onChange={(event) => setPassword(event.currentTarget.value)}
+              />
+
+              {mode === "register" ? (
+                <div className="space-y-3 text-xs text-gray-600">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={hasAcceptedPolicies}
+                      onChange={(event) => setHasAcceptedPolicies(event.currentTarget.checked)}
+                      className="mt-1 h-4 w-4"
+                      required
+                    />
+                    <span>
+                      我已阅读并同意
+                      <Link href="/legal/terms" target="_blank" className="text-orange-600 hover:underline">
+                        《使用条款》
+                      </Link>
+                      和
+                      <Link href="/legal/privacy" target="_blank" className="ml-1 text-orange-600 hover:underline">
+                        《隐私政策》
+                      </Link>
+                      ，并同意 SmartPicture 按 GDPR 要求处理我的数据。
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 text-gray-500">
+                    <input
+                      type="checkbox"
+                      checked={marketingOptIn}
+                      onChange={(event) => setMarketingOptIn(event.currentTarget.checked)}
+                      className="mt-1 h-4 w-4"
+                    />
+                    <span>我愿意接收 SmartPicture 的产品动态与营销信息（可随时取消订阅）。</span>
+                  </label>
+                </div>
+              ) : null}
+
+              {errorMessage ? <p className="text-sm text-red-500">{errorMessage}</p> : null}
+              {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
+
+              <div className="flex items-center justify-between text-xs text-orange-600">
+                {mode === "login" ? (
+                  <button type="button" className="hover:underline" onClick={() => switchMode("reset")}>
+                    忘记密码？
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {mode === "register" ? (
+                  <button type="button" className="hover:underline" onClick={() => switchMode("login")}
+                  >
+                    已有账号？去登录
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="hover:underline"
+                    onClick={() => switchMode(mode === "login" ? "register" : "login")}
+                  >
+                    {mode === "login" ? "还没有账号？立即注册" : "已有账号？直接登录"}
+                  </button>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    提交中…
+                  </>
+                ) : mode === "login" ? (
+                  "登录"
+                ) : (
+                  "注册并体验"
+                )}
+              </Button>
+            </form>
+          )}
+
+          {mode === "reset" ? (
+            <div className="text-sm text-gray-600">
+              <button
+                type="button"
+                className="text-orange-600 hover:underline"
+                onClick={() => switchMode("login")}
+              >
+                返回登录
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

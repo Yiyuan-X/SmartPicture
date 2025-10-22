@@ -7,6 +7,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
+  fetchSignInMethodsForEmail,
+  sendPasswordResetEmail,
+  getRedirectResult,
   type UserCredential,
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebase-client";
@@ -36,6 +39,11 @@ export async function logout() {
   await signOut(auth);
 }
 
+export async function getAvailableSignInMethods(email: string) {
+  const auth = getFirebaseAuth();
+  return fetchSignInMethodsForEmail(auth, email);
+}
+
 export async function getCurrentIdToken(forceRefresh = false) {
   const auth = getFirebaseAuth();
   const currentUser = auth.currentUser;
@@ -58,4 +66,19 @@ export async function toAuthSuccessPayload(credential: UserCredential): Promise<
     displayName: credential.user.displayName,
     idToken,
   };
+}
+
+export async function sendResetEmail(email: string) {
+  const auth = getFirebaseAuth();
+  await sendPasswordResetEmail(auth, email);
+}
+
+export async function consumePendingRedirect() {
+  const auth = getFirebaseAuth();
+  try {
+    await getRedirectResult(auth);
+  } catch (error) {
+    // swallow redirect errors; they usually mean there was no pending result
+    console.warn("[auth] consumePendingRedirect failed", error);
+  }
 }
