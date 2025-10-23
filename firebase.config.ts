@@ -10,9 +10,12 @@ if (!apiKey || !authDomain || !projectId || !appId) {
 }
 
 export const firebaseClientConfig = {
-  apiKey: AIzaSyDemn0sPPxLzzqgOrnSAqii2aigXLfsaxg,
-  authDomain: aall-74802152-9ef06.firebaseapp.com,
-  projectId: all-74802152-9ef06,
-  appId: 1:102333595083:web:a9767c82e3f26b56f4ca4e,
+  apiKey: "AIzaSyDemn0sPPxLzzqgOrnSAqii2aigXLfsaxg",
+  authDomain: "all-74802152-9ef06.firebaseapp.com",
+  projectId: "all-74802152-9ef06",
+  storageBucket: "all-74802152-9ef06.firebasestorage.app",
+  messagingSenderId: "102333595083",
+  appId: "1:102333595083:web:a9767c82e3f26b56f4ca4e",
+  measurementId: "G-QL4CJJLCJD"
 };
 
