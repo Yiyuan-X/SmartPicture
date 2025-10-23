@@ -10,9 +10,9 @@ if (!apiKey || !authDomain || !projectId || !appId) {
 }
 
 export const firebaseClientConfig = {
-  apiKey: apiKey ?? "",
-  authDomain: authDomain ?? "",
-  projectId: projectId ?? "",
-  appId: appId ?? "",
+  apiKey: AIzaSyDemn0sPPxLzzqgOrnSAqii2aigXLfsaxg,
+  authDomain: aall-74802152-9ef06.firebaseapp.com,
+  projectId: all-74802152-9ef06,
+  appId: 1:102333595083:web:a9767c82e3f26b56f4ca4e,
 };
 
